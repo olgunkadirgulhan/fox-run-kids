@@ -1137,11 +1137,12 @@ def update_world(t):
 def update_camera(t, camx):
     # hook: start in front of the fox showing its face, orbit to chase view
     if Gm.SHORT:
-        chase = Vector((camx * 0.7, -2.35, 1.3))
-        look_chase = Vector((camx * 0.7, 4.0, 0.92))
+        # high chase view: fox sits in the lower third, the road ahead stays visible above its head
+        chase = Vector((camx * 0.55, -3.9, 2.75))
+        look_chase = Vector((camx * 0.3, 7.0, 0.15))
     else:
-        chase = Vector((camx * 0.45, -3.0, 1.55))
-        look_chase = Vector((camx * 0.45, 4.0, 0.57))
+        chase = Vector((camx * 0.4, -4.3, 2.5))
+        look_chase = Vector((camx * 0.3, 8.0, 0.2))
     if t < 2.0:
         u = max(0.0, (t - 0.35) / 1.65)
         u = u * u * (3 - 2 * u)
@@ -1149,7 +1150,9 @@ def update_camera(t, camx):
         r = 3.3 - 0.3 * math.sin(ang)
         pos = Vector((math.sin(ang) * r * 0.75, math.cos(ang) * r, 1.15 + 0.4 * u))
         k = max(0.0, (u - 0.65) / 0.35)
-        look = Vector((0, 0, 0.95)).lerp(look_chase, k * k * (3 - 2 * k))
+        k = k * k * (3 - 2 * k)
+        look = Vector((0, 0, 0.95)).lerp(look_chase, k)
+        pos = pos.lerp(chase, k)
     else:
         si, s = Gm.seg_at(t)
         lt = t - s["t0"]
