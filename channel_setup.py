@@ -9,7 +9,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TITLE = "Fox Run Kids"
 DESCRIPTION = """Stand up, kids! 🦊 Run, jump, duck and dodge with the fox!
 
-Fox Run Kids makes immersive, interactive workout games for children. Our fox runs through a new 3D world every week (Candy Land, Desert, Space, Snow, Jungle and more) and kids copy every move at home or in the classroom:
+Fox Run Kids makes immersive, interactive workout games for children. Our fox runs through a new 3D world every week (Candy World, Desert, Space, Snow, Jungle and more) and kids copy every move at home or in the classroom:
 
 ⬆️ JUMP over hurdles
 ⬇️ DUCK under barriers

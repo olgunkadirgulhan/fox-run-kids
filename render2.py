@@ -27,7 +27,7 @@ EXS = [  # key, label, cycle seconds, world
     ("bend", "SIDE BENDS", 3.6, 2),
     ("breath", "BIG BREATHS", 5.0, 2),
 ]
-WORLDS = ["CANDY LAND RUN", "JUNGLE RUN", "SNOW RUN"]
+WORLDS = ["CANDY WORLD RUN", "JUNGLE RUN", "SNOW RUN"]
 TOTAL = INTRO + len(EXS) * (PREP + WORK) + OUTRO
 NF = int(TOTAL * FPS)
 

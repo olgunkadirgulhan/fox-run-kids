@@ -20,7 +20,7 @@ LANE = 1.15
 PREP = 6.0
 
 # world kits (visuals live in bl_scene.py)
-KITS = ["FOREST", "BEACH", "SNOW", "DESERT", "CANDY LAND", "CITY", "AUTUMN", "SPACE", "FARM", "JUNGLE"]
+KITS = ["FOREST", "BEACH", "SNOW", "DESERT", "CANDY WORLD", "CITY", "AUTUMN", "SPACE", "FARM", "JUNGLE"]
 ROTATION = [4, 3, 6, 5, 9, 8, 7, 0, 1, 2]  # featured "new world" per week
 WEEK0 = datetime.date(2026, 10, 5)
 WEEK = max(0, (DATE - WEEK0).days // 7)
