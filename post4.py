@@ -7,15 +7,16 @@ import render2 as R
 import game as Gm
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FR = os.path.join(HERE, "frames" if not Gm.SHORT else "frames_" + Gm.CFG)
+FR = os.environ.get("FRAMES_DIR") or os.path.join(HERE, "frames_" + Gm.TAG)
 W, H, FPS = (1080, 1920, Gm.FPS) if Gm.SHORT else (1920, 1080, Gm.FPS)
 R.W, R.H = W, H
-TAG = "v4" if not Gm.SHORT else Gm.CFG
-CUE_X, CUE_Y, CUE_S = (540, 430, 0.85) if Gm.SHORT else (960, 175, 1.0)
+TAG = Gm.TAG
+CUE_X, CUE_Y, CUE_S = (540, 610, 0.85) if Gm.SHORT else (960, 175, 1.0)
 sstep = R.sstep
 CUE = {"jump": ("JUMP!", (60, 205, 90)), "duck": ("DUCK!", (255, 150, 30)),
        "left": ("LEFT!", (70, 160, 255)), "right": ("RIGHT!", (70, 160, 255))}
-WACC = [(60, 205, 90), (255, 170, 40), (90, 170, 255)]
+WACC = [(60, 205, 90), (255, 170, 40), (90, 170, 255), (255, 140, 40), (255, 90, 170), (120, 140, 255),
+        (255, 120, 30), (80, 220, 255), (120, 200, 60), (40, 190, 110)]
 
 
 # ------------------------------------------------------------------ coin collection times (mirror of bl_scene logic)
@@ -240,8 +241,8 @@ def hud_short(img, t):
         coin_hud(img, t)
         if lt < 2.4:
             a = min(1.0, lt * 4, (2.4 - lt) * 3)
-            big_banner2(img, "CAN YOU DODGE", 300, 112, a)
-            big_banner2(img, "THEM ALL?", 430, 150, a, fill=(255, 255, 255))
+            big_banner2(img, "CAN YOU DODGE", 255, 112, a)
+            big_banner2(img, "THEM ALL?", 385, 150, a, fill=(255, 255, 255))
         f = lt / s["dur"]
         d.rounded_rectangle([90, 1790, 990, 1822], 14, fill=(255, 255, 255))
         d.rounded_rectangle([94, 1794, 986, 1818], 12, fill=(30, 30, 55))
@@ -307,8 +308,10 @@ def audio():
         z = rng.standard_normal(len(x))
         z = np.convolve(z, np.ones(12) / 12, mode="same")
         return z * np.sin(np.pi * x / d) ** 2 * vol
-    beat = 60 / 128
-    prog = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]]  # Am F C G
+    beat = 60 / Gm.TEMPO
+    progs = [[[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], [[48, 52, 55], [55, 59, 62], [57, 60, 64], [53, 57, 60]],
+             [[53, 57, 60], [55, 59, 62], [52, 55, 59], [57, 60, 64]]]
+    prog = [[n + Gm.KEY_SHIFT for n in c] for c in progs[Gm.SEED % 3]]
     arp = [0, 1, 2, 1, 2, 1, 0, 2]
     for b in range(int(Gm.TOTAL / beat) + 1):
         t0 = b * beat
@@ -375,20 +378,41 @@ def worker(k, n):
     p.stdin.close(); p.wait()
 
 
-def thumbnail():
-    # pick an airborne hurdle jump in the forest for the thumbnail
+def thumb_frame():
     e = next(e for e in Gm.EVENTS if e["type"] == "jump" and e["t"] > 14)
-    img = Image.open(os.path.join(FR, "f%05d.jpg" % int(round(e["t"] * FPS)))).convert("RGBA")
+    return int(round(e["t"] * FPS))
+
+
+def thumbnail(src=None, out=None):
+    img = Image.open(src or os.path.join(FR, "f%05d.jpg" % thumb_frame())).convert("RGBA")
+    R.paste_c(img, R.text_img(Gm.WORLDS[Gm.FEATURED], 110, fill=(255, 255, 255), sw=9), 960, 270)
     R.paste_c(img, R.text_img("JUMP! DUCK! DODGE!", 150, sw=12), 960, 130)
     R.panel(img, (60, 830, 700, 1040), fill=(230, 40, 110, 240), border=(255, 255, 255))
     R.paste_c(img, R.text_img("KIDS WARM UP", 84, fill=(255, 255, 255), sw=5), 380, 885)
     R.paste_c(img, R.text_img("RUN GAME!", 84, fill=(255, 220, 40), sw=5), 380, 980)
     R.panel(img, (1480, 880, 1860, 1030), fill=(20, 20, 45, 230), border=(255, 220, 40))
     R.paste_c(img, R.text_img("8 MIN", 100, fill=(255, 220, 40), sw=5), 1670, 955)
-    img.convert("RGB").resize((1280, 720), Image.LANCZOS).save(os.path.join(HERE, "thumbnail4.jpg"), quality=92)
+    img.convert("RGB").resize((1280, 720), Image.LANCZOS).save(out or os.path.join(HERE, "thumbnail_%s.jpg" % TAG), quality=92)
+
+
+def encode_range(a, b, out):
+    p = subprocess.Popen([R.FF, "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS),
+                          "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", out], stdin=subprocess.PIPE)
+    for f_ in range(a, b):
+        p.stdin.write(frame(f_).tobytes())
+    p.stdin.close()
+    if p.wait():
+        sys.exit("ffmpeg failed")
 
 
 if __name__ == "__main__":
+    if "--range" in sys.argv:
+        i = sys.argv.index("--range")
+        encode_range(int(sys.argv[i + 1]), int(sys.argv[i + 2]), sys.argv[i + 3])
+        sys.exit()
+    if "--audio" in sys.argv:
+        audio()
+        sys.exit()
     if "--preview" in sys.argv:
         for t in [float(x) for x in sys.argv[sys.argv.index("--preview") + 1].split(",")]:
             frame(int(round(t * FPS))).save(os.path.join(HERE, f"pp_{t:07.2f}.jpg"), quality=85)

@@ -238,5 +238,5 @@ if __name__ == "__main__":
     import os, time
     t0 = time.time()
     A = simulate()
-    np.save(os.path.join(os.path.dirname(os.path.abspath(__file__)), "anim4.npy" if Gm.CFG == "long" else "anim_%s.npy" % Gm.CFG), A)
+    np.save(os.path.join(os.path.dirname(os.path.abspath(__file__)), "anim_%s.npy" % Gm.TAG), A)
     print(A.shape, round(time.time() - t0, 1), "s", np.isnan(A).sum())

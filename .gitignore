@@ -1,0 +1,10 @@
+anim_*.npy
+frames*/
+fr/
+wt/
+*.mp4
+*.wav
+worlds.jpg
+parts.txt
+__pycache__/
+blender/

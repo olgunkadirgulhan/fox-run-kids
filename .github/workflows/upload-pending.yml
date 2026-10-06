@@ -1,0 +1,50 @@
+name: upload-pending
+# Uploads videos rendered while YouTube secrets were not yet configured.
+on:
+  schedule:
+    - cron: "37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: repo-writes
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+      YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+      YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+      YT_CHANNEL_ID: ${{ secrets.YT_CHANNEL_ID }}
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - name: Anything to do?
+        id: chk
+        run: |
+          if [ -s pending.csv ] && [ -n "$YT_REFRESH_TOKEN" ]; then echo "go=1" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/setup-python@v6
+        if: steps.chk.outputs.go
+        with:
+          python-version: "3.12"
+          cache: pip
+      - if: steps.chk.outputs.go
+        run: pip install -r requirements.txt
+      - if: steps.chk.outputs.go
+        run: python upload_pending.py
+      - if: steps.chk.outputs.go
+        run: |
+          git config user.name "fox-bot"
+          git config user.email "bot@users.noreply.github.com"
+          for f in published.csv pending.csv; do [ -f $f ] && git add $f; done; true
+          git diff --cached --quiet && exit 0
+          git commit -m "upload pending videos"
+          git pull --rebase
+          git push

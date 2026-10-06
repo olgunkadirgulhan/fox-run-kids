@@ -1,0 +1,142 @@
+name: produce
+# Renders one video in parallel chunks on GitHub runners (Blender Eevee, software GL),
+# then uploads it to YouTube as private with a scheduled publishAt (made for kids).
+on:
+  workflow_dispatch:
+    inputs:
+      cfg:
+        description: "long:YYYY-MM-DD or short:YYYY-MM-DD:K"
+        required: true
+      publish_at:
+        description: "UTC time to go public, e.g. 2026-10-07T19:00:00Z"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  WARMUP_CFG: ${{ inputs.cfg }}
+  PYTHONUTF8: "1"
+  BLENDER_URL: https://download.blender.org/release/Blender4.5/blender-4.5.14-linux-x64.tar.xz
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      chunks: ${{ steps.p.outputs.chunks }}
+      tag: ${{ steps.p.outputs.tag }}
+      thumb: ${{ steps.p.outputs.thumb }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install numpy pillow imageio-ffmpeg
+      - id: p
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, game as G, post4
+          n = 6 if G.SHORT else 24
+          r = [[G.NF * k // n, G.NF * (k + 1) // n] for k in range(n)]
+          print("chunks=" + json.dumps([{"i": k, "a": a, "b": b} for k, (a, b) in enumerate(r)]))
+          print("tag=" + G.TAG.replace(".", "-"))
+          print("thumb=" + str(post4.thumb_frame() if not G.SHORT else -1))
+          PY
+      - run: python motion4.py
+      - uses: actions/upload-artifact@v5
+        with:
+          name: anim-${{ steps.p.outputs.tag }}
+          path: anim_*.npy
+          retention-days: 3
+
+  render:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk: ${{ fromJson(needs.plan.outputs.chunks) }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install numpy pillow imageio-ffmpeg
+      - run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends xvfb libgl1 libegl1 libgl1-mesa-dri libxi6 libxrender1 libxkbcommon0 libsm6 libxxf86vm1 libxfixes3
+      - uses: actions/cache@v4
+        with:
+          path: blender
+          key: blender-4.5.14
+      - run: |
+          if [ ! -x blender/blender ]; then mkdir -p blender && curl -sSL $BLENDER_URL | tar -xJ --strip-components=1 -C blender; fi
+      - uses: actions/download-artifact@v5
+        with:
+          name: anim-${{ needs.plan.outputs.tag }}
+      - name: Render frames
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          RES=1920; case "$WARMUP_CFG" in short*) RES=1080;; esac
+          xvfb-run -a -s "-screen 0 1920x1080x24" blender/blender -b -P bl_scene.py -- --out fr --res $RES \
+            --start ${{ matrix.chunk.a }} --end $(( ${{ matrix.chunk.b }} - 1 )) --samples 16 2>&1 | grep -E "Error|Traceback|^Time" | tail -5
+          test "$(ls fr | wc -l)" -eq $(( ${{ matrix.chunk.b }} - ${{ matrix.chunk.a }} ))
+      - name: Overlay HUD + encode chunk
+        env:
+          FRAMES_DIR: fr
+        run: |
+          python post4.py --range ${{ matrix.chunk.a }} ${{ matrix.chunk.b }} chunk_$(printf %03d ${{ matrix.chunk.i }}).mp4
+          T=${{ needs.plan.outputs.thumb }}
+          if [ "$T" -ge ${{ matrix.chunk.a }} ] && [ "$T" -lt ${{ matrix.chunk.b }} ]; then cp fr/f$(printf %05d $T).jpg thumb_src.jpg; fi
+      - uses: actions/upload-artifact@v5
+        with:
+          name: chunk-${{ needs.plan.outputs.tag }}-${{ matrix.chunk.i }}
+          path: |
+            chunk_*.mp4
+            thumb_src.jpg
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    needs: [plan, render]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: repo-writes
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: chunk-${{ needs.plan.outputs.tag }}-*
+          path: chunks
+      - name: Assemble and upload
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CHANNEL_ID: ${{ secrets.YT_CHANNEL_ID }}
+        run: python publish.py chunks "${{ inputs.publish_at }}"
+      - uses: actions/upload-artifact@v5
+        with:
+          name: video-${{ needs.plan.outputs.tag }}
+          path: final_*.mp4
+          retention-days: 7
+      - name: Record
+        run: |
+          [ -f published.csv ] || [ -f pending.csv ] || exit 0
+          git config user.name "fox-bot"
+          git config user.email "bot@users.noreply.github.com"
+          for f in published.csv pending.csv; do [ -f $f ] && git add $f; done; true
+          git diff --cached --quiet && exit 0
+          git commit -m "published ${WARMUP_CFG}"
+          git pull --rebase
+          git push
