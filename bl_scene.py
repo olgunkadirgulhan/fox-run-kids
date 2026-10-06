@@ -1176,8 +1176,40 @@ def on_frame(sc, *args):
 
 bpy.app.handlers.frame_change_pre.append(on_frame)
 
+def brand_shot(kind, f, out):
+    """Stills for channel branding: avatar (fox face, transparent bg) or banner (wide run scene)."""
+    scene.render.use_motion_blur = False
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.image_settings.color_mode = "RGBA"
+    scene.frame_set(f)
+    bpy.app.handlers.frame_change_pre.remove(on_frame)
+    if kind == "avatar":
+        scene.render.resolution_x = scene.render.resolution_y = 1080
+        scene.render.film_transparent = True
+        cam_d.lens = 55
+        R_ = rec(f / Gm.FPS)
+        head = V(R_[31])
+        pos = head + Vector((0, -1.25, 0.12))
+        look = head + Vector((0, 0, -0.06))
+    else:
+        scene.render.resolution_x, scene.render.resolution_y = 2560, 1440
+        cam_d.lens = 26
+        cam_d.shift_x = 0.13
+        pos = Vector((0.0, -4.6, 2.1))
+        look = Vector((0.0, 6.0, 1.0))
+    cam.location = pos
+    cam.rotation_mode = "QUATERNION"
+    cam.rotation_quaternion = (look - pos).to_track_quat("-Z", "Y")
+    scene.render.filepath = out
+    bpy.ops.render.render(write_still=True)
+
+
 if __name__ == "__main__":
     os.makedirs(OUTDIR, exist_ok=True)
+    if os.environ.get("BRAND_SHOT"):
+        kind, f = os.environ["BRAND_SHOT"].split(":")
+        brand_shot(kind, int(f), os.path.join(OUTDIR, kind + ".png"))
+        sys.exit()
     if FRAMELIST:
         for f in [int(x) for x in FRAMELIST.split(",")]:
             scene.frame_set(f)

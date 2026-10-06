@@ -58,12 +58,35 @@ def upload(mp4, publish_at, thumb=None):
     while resp is None:
         _, resp = req.next_chunk()
     vid = resp["id"]
+    add_to_playlists(vid)
     if thumb and os.path.exists(thumb):
         try:
             client.thumbnails().set(videoId=vid, media_body=MediaFileUpload(thumb, mimetype="image/jpeg")).execute()
         except Exception as e:  # custom thumbnails need a verified channel
             print("thumbnail skipped:", e)
     return vid, title, status.get("publishAt", "now")
+
+
+def add_to_playlist(client, playlist_id, video_id):
+    have = client.playlistItems().list(part="contentDetails", playlistId=playlist_id, maxResults=50).execute().get("items", [])
+    if any(i["contentDetails"]["videoId"] == video_id for i in have):
+        return
+    client.playlistItems().insert(part="snippet", body={"snippet": {
+        "playlistId": playlist_id, "resourceId": {"kind": "youtube#video", "videoId": video_id}}}).execute()
+
+
+def add_to_playlists(vid):
+    import json
+    path = os.path.join(HERE, "playlists.json")
+    if not os.path.exists(path):
+        return
+    ids = json.load(open(path))
+    for key in (["shorts"] if Gm.SHORT else ["long", "brain"]):
+        if key in ids:
+            try:
+                add_to_playlist(yt(), ids[key], vid)
+            except Exception as e:
+                print("playlist skipped:", e)
 
 
 def log(vid, title, when):
