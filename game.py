@@ -48,13 +48,43 @@ def pick_other(exclude):
 
 
 EX_POOL = [("jacks", "JUMPING JACKS"), ("knees", "HIGH KNEES"), ("skater", "SKATER HOPS"), ("circles", "ARM CIRCLES"),
-           ("reach", "JUMP & REACH"), ("kicks", "BUTT KICKS"), ("squat", "SQUATS"), ("punch", "SKY PUNCHES")]
+           ("reach", "JUMP & REACH"), ("kicks", "BUTT KICKS"), ("squat", "SQUATS"), ("punch", "SKY PUNCHES"),
+           ("star", "STAR JUMPS"), ("frog", "FROG JUMPS"), ("lunge", "LUNGES"), ("shuffle", "SIDE SHUFFLE"), ("run", "RUN IN PLACE")]
+# seconds per cycle and reps counted per cycle (for "how many can you do?" counters)
+REPS = {"jacks": (1.1, 1), "knees": (0.64, 2), "skater": (1.8, 2), "circles": (1.2, 1), "reach": (2.0, 1), "kicks": (0.7, 2),
+        "squat": (2.4, 1), "punch": (0.9, 2), "star": (1.5, 1), "frog": (2.0, 1), "lunge": (2.8, 2), "shuffle": (2.4, 6),
+        "run": (0.72, 2)}
 
+
+def shuffled(seq):
+    seq = list(seq)
+    for i in range(len(seq) - 1, 0, -1):
+        j = int(_r() * (i + 1))
+        seq[i], seq[j] = seq[j], seq[i]
+    return seq
+
+FORMATS = ["dodge", "levelup", "movemix", "count"]
+FORMAT = FORMATS[(DATE.toordinal() + SLOT) % len(FORMATS)] if SHORT else "long"
 if SHORT:
-    TOTAL = 42.0
     W0 = FEATURED if SLOT == 1 else pick_other([FEATURED] if SLOT == 2 else [])
-    SEGS = [dict(kind="game", t0=0, dur=36, world=W0, gap=2.2 + 0.3 * _r(), types="jdlr", n=1, lead=2.3),
-            dict(kind="outro", t0=36, dur=6, world=W0)]
+    COUNT_MOVES = [m for m in EX_POOL if m[0] not in ("circles", "shuffle", "run")]
+    if FORMAT == "dodge":
+        SEGS = [dict(kind="game", t0=0, dur=36, world=W0, gap=2.2 + 0.3 * _r(), types="jdlr", n=1, lead=2.3)]
+    elif FORMAT == "levelup":
+        SEGS = [dict(kind="game", t0=12 * k, dur=12, world=W0, gap=[2.6, 2.05, 1.65][k], types="jdlr" if k else "jd",
+                     n=k + 1, lead=2.3 if k == 0 else 0.9) for k in range(3)]
+    elif FORMAT == "movemix":
+        moves = shuffled(EX_POOL)[:3]
+        SEGS = [dict(kind="game", t0=0, dur=9, world=W0, gap=2.3, types="jdlr", n=1, lead=2.3)]
+        for k, (key, label) in enumerate(moves):
+            SEGS.append(dict(kind="ex", t0=9 + 11 * k, dur=11, world=W0, key=key, label=label, prep=3.0))
+    else:  # count
+        key, label = shuffled(COUNT_MOVES)[0]
+        SEGS = [dict(kind="game", t0=0, dur=6, world=W0, gap=2.0, types="jd", n=1, lead=2.0),
+                dict(kind="ex", t0=6, dur=32, world=W0, key=key, label=label, prep=4.0)]
+    t_end = SEGS[-1]["t0"] + SEGS[-1]["dur"]
+    SEGS.append(dict(kind="outro", t0=t_end, dur=6, world=W0))
+    TOTAL = float(t_end + 6)
 else:
     TOTAL = 480.0
     w1 = FEATURED
@@ -75,7 +105,8 @@ else:
         if r < 5:
             SEGS.append(dict(kind="ex", t0=t, dur=36, world=worlds[r], key=ex[r][0], label=ex[r][1]))
             t += 36
-    SEGS.append(dict(kind="ex", t0=t, dur=21, world=w3, key="breath", label="BIG BREATHS"))
+    cool = ("breath", "BIG BREATHS") if _r() < 0.5 else ("bend", "SIDE BENDS")
+    SEGS.append(dict(kind="ex", t0=t, dur=21, world=w3, key=cool[0], label=cool[1]))
     t += 21
     SEGS.append(dict(kind="outro", t0=t, dur=TOTAL - t, world=w3))
 
@@ -101,9 +132,9 @@ def speed_target(t):
     if s["kind"] == "hook":
         return 7.0
     if s["kind"] == "game":
-        return 6.6 if SHORT else 6.0 + 0.25 * s["n"]
+        return 5.6 + 0.8 * s["n"] if SHORT else 6.0 + 0.25 * s["n"]
     if s["kind"] == "ex":
-        if lt < PREP:
+        if lt < s.get("prep", PREP):
             return 3.0
         return {"knees": 4.5, "skater": 3.5, "jacks": 3.0, "reach": 3.0, "kicks": 4.0}.get(s["key"], 2.0)
     return 4.0 if lt < 1.0 else 0.0
@@ -211,3 +242,14 @@ if __name__ == "__main__":
     for s in SEGS:
         print(" ", s["kind"], s["t0"], s["dur"], KITS[s["world"]], s.get("label", ""))
 TAG = CFG.replace(":", "_")
+
+
+def rep_target(s):
+    cyc, per = REPS.get(s["key"], (1.0, 1))
+    return int((s["dur"] - s.get("prep", PREP)) / cyc * per)
+
+
+def rep_count(s, t):
+    cyc, per = REPS.get(s["key"], (1.0, 1))
+    w = t - s["t0"] - s.get("prep", PREP)
+    return max(0, min(rep_target(s), int(w / cyc * per)))

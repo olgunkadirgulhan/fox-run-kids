@@ -170,12 +170,13 @@ def hud(img, t):
             R.paste_l(img, R.text_img("NEXT:", 44, fill=(255, 255, 255), sw=3), 1398, 876)
             R.paste_l(img, R.text_img(nxt["label"], 56), 1398, 928)
     elif s["kind"] == "ex":
-        work = s["dur"] - Gm.PREP
+        prep = s.get("prep", Gm.PREP)
+        work = s["dur"] - prep
         R.panel(img, (30, 30, 830, 250), border=acc)
-        if lt < Gm.PREP:
+        if lt < prep:
             R.paste_l(img, R.text_img("GET READY!", 54, fill=acc, sw=4), 62, 45)
-            rem = Gm.PREP - lt
-            seg_timer(img, rem, Gm.PREP, acc)
+            rem = prep - lt
+            seg_timer(img, rem, prep, acc)
             if rem <= 3:
                 n = int(math.ceil(rem))
                 fr = n - rem
@@ -185,7 +186,7 @@ def hud(img, t):
                 R.panel(img, (650, 930, 1270, 1012), border=acc)
                 R.paste_c(img, R.text_img("WATCH THE MOVE...", 54, fill=(255, 255, 255), sw=3), 960, 971)
         else:
-            wl = lt - Gm.PREP
+            wl = lt - prep
             R.paste_l(img, R.text_img("WARM UP MOVE", 54, fill=acc, sw=4), 62, 45)
             seg_timer(img, work - wl, work, acc)
             if wl < 1.0:
@@ -228,35 +229,79 @@ def hud(img, t):
     cue(img, t)
 
 
+INTRO = {"dodge": ("CAN YOU DODGE", "THEM ALL?"), "levelup": ("3 LEVELS!", "CAN YOU KEEP UP?"),
+         "movemix": ("COPY", "THE FOX!"), "count": ("CAN YOU DO", "")}
+OUTRO = {"dodge": ("HOW MANY DID", "YOU DODGE?"), "levelup": ("YOU BEAT", "LEVEL 3!"), "movemix": ("GREAT", "MOVES!"),
+         "count": ("DID YOU DO", "ALL OF THEM?")}
+
+
 def hud_short(img, t):
     i, s = Gm.seg_at(t)
     lt = t - s["t0"]
     d = ImageDraw.Draw(img)
     acc = WACC[s["world"]]
+    fmt = Gm.FORMAT
+    ex_segs = [x for x in Gm.SEGS if x["kind"] == "ex"]
     tot = len(Gm.EVENTS)
     done = sum(1 for e in Gm.EVENTS if t > e["t"] + 0.3)
+    if t < 2.4:  # format intro
+        a = min(1.0, t * 4, (2.4 - t) * 3)
+        l1, l2 = INTRO[fmt]
+        if fmt == "count":
+            l1, l2 = f"CAN YOU DO {Gm.rep_target(ex_segs[0])}", ex_segs[0]["label"] + "?"
+        big_banner2(img, l1, 255, 112, a)
+        big_banner2(img, l2, 385, 130, a, fill=(255, 255, 255))
     if s["kind"] == "game":
         R.panel(img, (30, 75, 400, 165), fill=(20, 20, 45, 190), border=acc)
-        R.paste_l(img, R.text_img(f"DODGED {done}/{tot}", 62, fill=(255, 255, 255), sw=4), 52, 85)
+        label = f"LEVEL {s['n']}/3" if fmt == "levelup" else f"DODGED {done}/{tot}"
+        R.paste_l(img, R.text_img(label, 62, fill=(255, 255, 255), sw=4), 52, 85)
         coin_hud(img, t)
-        if lt < 2.4:
-            a = min(1.0, lt * 4, (2.4 - lt) * 3)
-            big_banner2(img, "CAN YOU DODGE", 255, 112, a)
-            big_banner2(img, "THEM ALL?", 385, 150, a, fill=(255, 255, 255))
-        f = lt / s["dur"]
+        if fmt == "levelup" and s["n"] > 1 and lt < 1.6:
+            a = min(1.0, lt * 4, (1.6 - lt) * 3)
+            big_banner2(img, f"LEVEL {s['n']}!", 330, 170, a)
+            big_banner2(img, "FASTER!", 470, 100, a, fill=(255, 255, 255))
+    elif s["kind"] == "ex":
+        prep = s.get("prep", Gm.PREP)
+        R.panel(img, (40, 70, 1040, 200), fill=(20, 20, 45, 200), border=acc)
+        big_banner2(img, s["label"], 135, 96, 1.0)
+        if lt < prep:
+            rem = prep - lt
+            if rem <= 3:
+                n = int(math.ceil(rem))
+                fr = n - rem
+                R.paste_c(img, R.text_img(str(n), 300, fill=(255, 255, 255), sw=14), 540, 560,
+                          scale=1.3 - 0.3 * min(1, fr * 4), alpha=1 - max(0, fr - 0.7) / 0.3)
+            if fmt == "movemix":
+                k = ex_segs.index(s) + 1
+                big_banner2(img, f"MOVE {k} OF {len(ex_segs)}", 300, 70, 1.0, fill=(255, 255, 255))
+        else:
+            wl = lt - prep
+            if wl < 0.9:
+                R.paste_c(img, R.text_img("GO!", 260, fill=acc, sw=14), 540, 560, scale=0.8 + 0.4 * wl, alpha=1 - wl / 0.9)
+            if fmt == "count":
+                n, tgt = Gm.rep_count(s, t), Gm.rep_target(s)
+                R.panel(img, (290, 1560, 790, 1720), fill=(20, 20, 45, 215), border=acc)
+                big_banner2(img, f"{n} / {tgt}", 1640, 120, 1.0, fill=(255, 220, 50))
+        f = min(1.0, max(0.0, (lt - prep) / (s["dur"] - prep)))
         d.rounded_rectangle([90, 1790, 990, 1822], 14, fill=(255, 255, 255))
         d.rounded_rectangle([94, 1794, 986, 1818], 12, fill=(30, 30, 55))
         d.rounded_rectangle([94, 1794, 94 + max(24, 892 * f), 1818], 12, fill=acc)
     else:
         a = min(1.0, lt * 3)
-        big_banner2(img, "HOW MANY DID", 300, 120, a)
-        big_banner2(img, "YOU DODGE?", 440, 140, a, fill=(255, 255, 255))
+        l1, l2 = OUTRO[fmt]
+        big_banner2(img, l1, 300, 120, a)
+        big_banner2(img, l2, 440, 140, a, fill=(255, 255, 255))
         if lt > 1.5:
             R.panel(img, (190, 1560, 890, 1690), fill=(230, 40, 110, 235), border=(255, 255, 255))
             big_banner2(img, "PLAY AGAIN!", 1625, 96, min(1, (lt - 1.5) * 3), fill=(255, 255, 255))
         R.confetti_burst(d, lt, 99, n=140, x0=540, y0=700)
         R.confetti_burst(d, lt - 1.8, 98, n=100, x0=300, y0=600)
         R.confetti_burst(d, lt - 3.0, 97, n=100, x0=780, y0=600)
+    if s["kind"] == "game":
+        f = min(1.0, t / max(1e-6, sum(x["dur"] for x in Gm.SEGS if x["kind"] == "game")))
+        d.rounded_rectangle([90, 1790, 990, 1822], 14, fill=(255, 255, 255))
+        d.rounded_rectangle([94, 1794, 986, 1818], 12, fill=(30, 30, 55))
+        d.rounded_rectangle([94, 1794, 94 + max(24, 892 * f), 1818], 12, fill=acc)
     cue(img, t)
 
 
@@ -317,7 +362,7 @@ def audio():
         t0 = b * beat
         i, s = Gm.seg_at(t0)
         lt = t0 - s["t0"]
-        en = s["kind"] in ("hook", "game") or (s["kind"] == "ex" and lt >= Gm.PREP)
+        en = s["kind"] in ("hook", "game") or (s["kind"] == "ex" and lt >= s.get("prep", Gm.PREP))
         ch = prog[(b // 4) % 4]
         if en or s["kind"] == "outro":
             add(mus, t0, kick)
@@ -348,8 +393,13 @@ def audio():
     for j, s in enumerate(Gm.SEGS):
         if s["kind"] == "ex":
             st = s["t0"]
-            for k in (3, 2, 1): add(sfx, st + Gm.PREP - k, tone(880, 0.14))
-            add(sfx, st + Gm.PREP, tone(1320, 0.45, 0.55))
+            pr = s.get("prep", Gm.PREP)
+            for k in (3, 2, 1): add(sfx, st + pr - k, tone(880, 0.14))
+            add(sfx, st + pr, tone(1320, 0.45, 0.55))
+            if Gm.SHORT and Gm.FORMAT == "count":
+                cyc, per = Gm.REPS.get(s["key"], (1.0, 1))
+                for r_ in range(1, Gm.rep_target(s) + 1):
+                    add(sfx, st + pr + r_ * cyc / per, tone(1760, 0.05, 0.18))
             end = st + s["dur"]
             add(sfx, end, tone(1500, 0.18, 0.45)); add(sfx, end + 0.22, tone(1500, 0.3, 0.45))
         if s["kind"] == "game":

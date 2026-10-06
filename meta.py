@@ -14,13 +14,25 @@ def _ts(t):
 def meta():
     world = Gm.KITS[Gm.SEGS[0]["world"]].title()
     if Gm.SHORT:
-        title = _pick([
-            f"Can You Dodge Them All? 🦊 {world} Run Challenge #shorts",
-            f"Jump, Duck & Dodge! 🦊 {world} Obstacle Run #shorts",
-            f"Can You Beat The Fox? {world} Run Brain Break #shorts",
-            f"Dodge Challenge for Kids! 🦊 {world} Run #shorts",
-            f"Stand Up & Play! {world} Obstacle Dodge #shorts",
-        ])
+        ex = [s for s in Gm.SEGS if s["kind"] == "ex"]
+        if Gm.FORMAT == "levelup":
+            title = _pick([f"3 Levels of Dodge! 🦊 Can You Keep Up? {world} Run #shorts",
+                           f"It Gets FASTER! 🦊 {world} Obstacle Run Levels #shorts",
+                           f"Level 1, 2, 3! Can You Beat The Fox? {world} Run #shorts"])
+        elif Gm.FORMAT == "movemix":
+            moves = ", ".join(s["label"].title() for s in ex)
+            title = _pick([f"Copy The Fox! 🦊 {moves} #shorts", f"Move With Me! {moves} 🦊 Brain Break #shorts"])
+        elif Gm.FORMAT == "count":
+            n, mv = Gm.rep_target(ex[0]), ex[0]["label"].title()
+            title = _pick([f"Can You Do {n} {mv}? 🦊 Kids Challenge #shorts", f"{n} {mv} Challenge! Count With The Fox 🦊 #shorts"])
+        else:
+            title = _pick([
+                f"Can You Dodge Them All? 🦊 {world} Run Challenge #shorts",
+                f"Jump, Duck & Dodge! 🦊 {world} Obstacle Run #shorts",
+                f"Can You Beat The Fox? {world} Run Brain Break #shorts",
+                f"Dodge Challenge for Kids! 🦊 {world} Run #shorts",
+                f"Stand Up & Play! {world} Obstacle Dodge #shorts",
+            ])
         desc = (f"Stand up and play along! 🦊 Jump over hurdles, duck under bars and dodge left and right "
                 f"with the fox in the {world} world. How many obstacles can you dodge?\n\n"
                 "A quick active brain break for kids at home or in the classroom.\n\n"
