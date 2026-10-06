@@ -87,12 +87,12 @@ def main():
         json.dump(ids, open(PL_FILE, "w"), indent=2)
 
     # back-fill playlists for videos uploaded before they existed
-    import csv
-    path = os.path.join(HERE, "published.csv")
-    if os.path.exists(path):
-        for row in csv.DictReader(open(path)):
-            for key in (["shorts"] if row["cfg"].startswith("short") else ["long", "brain"]):
-                step(f"{row['video_id']} -> {key}", lambda: publish.add_to_playlist(yt, ids[key], row["video_id"]))
+    import csv, glob
+    for path in glob.glob(os.path.join(HERE, "records", "published", "*.csv")):
+        for row in csv.reader(open(path)):
+            cfg, vid = row[0], row[1]
+            for key in (["shorts"] if cfg.startswith("short") else ["long", "brain"]):
+                step(f"{vid} -> {key}", lambda: publish.add_to_playlist(yt, ids[key], vid))
     after = yt.channels().list(part="snippet", mine=True).execute()["items"][0]["snippet"]["title"]
     print("channel title now:", after)
 

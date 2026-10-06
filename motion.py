@@ -322,7 +322,78 @@ def ex_cheer(tc):
     return d
 
 
-FN = {"run": lambda tc: ex_run(tc, "run"), "knees": lambda tc: ex_run(tc, "knees"), "kicks": lambda tc: ex_run(tc, "kicks"),
+def ex_star(tc):
+    """star jumps: crouch, explode into an X in the air, land soft."""
+    T, tf = 1.5, 0.44
+    ts = T - tf
+    v = G * tf / 2
+    tau = tc % T
+    y0 = stand_h(0.14)
+    if tau < ts:
+        s_ = tau / ts
+        py = herm(y0, -v * 0.6, y0, v, ts, s_)
+        fl = 0.0
+    else:
+        q = tau - ts
+        py = y0 + v * q - G * q * q / 2
+        fl = bump(q / tf, 1)
+    crouch = max(0.0, y0 - py) / 0.2
+    d = base(rx=0.14 + 0.36 * fl, lx=-0.14 - 0.36 * fl, pole=0.4)
+    d.update(py=py, sl=4 + 18 * crouch, r_an=30 * fl, l_an=30 * fl, hn=-8 * fl,
+             r_sa=12 + 140 * fl, l_sa=12 + 140 * fl, r_sf=14 + 20 * crouch, l_sf=14 + 20 * crouch, r_el=14, l_el=14)
+    return d
+
+
+def ex_frog(tc):
+    """frog jumps: deep squat with hands low, jump up, land back into the squat."""
+    T = 2.0
+    tau = tc % T
+    y0 = stand_h(0.2)
+    v0, low = 1.9, 0.46
+    t1, t2 = 0.5, 0.72
+    tf = 2 * v0 / G
+    t3, t4 = t2 + tf, t2 + tf + 0.3
+    yt = y0 + 0.04
+    if tau < t1: py = y0 - low * sstep(tau / t1) if tc < T else y0 - low
+    elif tau < t2: py = herm(y0 - low, 0, yt, v0, t2 - t1, (tau - t1) / (t2 - t1))
+    elif tau < t3:
+        q = tau - t2
+        py = yt + v0 * q - G * q * q / 2
+    elif tau < t4: py = herm(yt, -v0, y0 - low, 0, t4 - t3, (tau - t3) / (t4 - t3))
+    else: py = y0 - low
+    crouch = max(0.0, y0 - py) / low
+    air = t2 <= tau < t3
+    d = base(rx=0.2, lx=-0.2, pole=0.6)
+    d.update(py=py, pz=0.18 * crouch, sl=4 + 40 * crouch, hn=-18 * crouch,
+             r_sf=8 + 62 * crouch + (150 if air else 0) * (1 - crouch), l_sf=8 + 62 * crouch + (150 if air else 0) * (1 - crouch),
+             r_sa=14, l_sa=14, r_el=12, l_el=12, r_an=32 if air else 0, l_an=32 if air else 0)
+    return d
+
+
+def ex_lunge(tc):
+    """alternating forward lunges: step out, lower, push back."""
+    T = 2.8
+    half = T / 2
+    k = int(tc // half)
+    u = (tc - k * half) / half
+    side = "r" if k % 2 == 0 else "l"
+    other = "l" if side == "r" else "r"
+    if u < 0.22: out, dd = sstep(u / 0.22), 0.0
+    elif u < 0.78: out, dd = 1.0, math.sin(math.pi * (u - 0.22) / 0.56)
+    else: out, dd = 1 - sstep((u - 0.78) / 0.22), 0.0
+    step_lift = 0.07 * (bump(u / 0.22, 1) if u < 0.22 else (bump((u - 0.78) / 0.22, 1) if u >= 0.78 else 0))
+    d = base(rx=0.13, lx=-0.13, pole=0.15)
+    d[side + "z"] = -0.42 * out
+    d[side + "y"] = 0.08 + step_lift
+    d[other + "z"] = 0.12 * out
+    d[other + "_an"] = 35 * dd
+    d[other + "y"] = 0.08 + 0.1 * dd
+    d.update(py=stand_h(0.13) - 0.3 * dd - 0.04 * out, pz=0.05 * out, sl=2,
+             r_sa=38, l_sa=38, r_sf=-18, l_sf=-18, r_el=95, l_el=95, hn=-4 * dd)
+    return d
+
+
+FN = {"star": ex_star, "frog": ex_frog, "lunge": ex_lunge, "run": lambda tc: ex_run(tc, "run"), "knees": lambda tc: ex_run(tc, "knees"), "kicks": lambda tc: ex_run(tc, "kicks"),
       "jacks": ex_jacks, "circles": ex_circles, "squat": ex_squat, "punch": ex_punch, "shuffle": ex_shuffle,
       "reach": ex_reach, "skater": ex_skater, "bend": ex_bend, "breath": ex_breath}
 

@@ -90,13 +90,10 @@ def add_to_playlists(vid):
 
 
 def log(vid, title, when):
-    path = os.path.join(HERE, "published.csv")
-    new = not os.path.exists(path)
-    with open(path, "a", newline="") as fh:
-        w = csv.writer(fh)
-        if new:
-            w.writerow(["cfg", "video_id", "publish_at", "title"])
-        w.writerow([Gm.CFG, vid, when, title])
+    d = os.path.join(HERE, "records", "published")
+    os.makedirs(d, exist_ok=True)
+    with open(os.path.join(d, Gm.TAG + ".csv"), "w", newline="") as fh:
+        csv.writer(fh).writerow([Gm.CFG, vid, when, title])
 
 
 if __name__ == "__main__":
@@ -117,9 +114,9 @@ if __name__ == "__main__":
             thumb = os.path.join(HERE, "thumb_%s.jpg" % Gm.TAG)
             post4.thumbnail(src[0], thumb)
     if not all(os.environ.get(k) for k in ("YT_CLIENT_ID", "YT_CLIENT_SECRET", "YT_REFRESH_TOKEN")):
-        print("YouTube secrets missing: queued in pending.csv, video kept as artifact")
-        path = os.path.join(HERE, "pending.csv")
-        with open(path, "a", newline="") as fh:
+        print("YouTube secrets missing: queued in records/pending, video kept as artifact")
+        os.makedirs(os.path.join(HERE, "records", "pending"), exist_ok=True)
+        with open(os.path.join(HERE, "records", "pending", Gm.TAG + ".csv"), "w", newline="") as fh:
             csv.writer(fh).writerow([Gm.CFG, publish_at, os.environ.get("GITHUB_RUN_ID", ""), Gm.TAG])
         sys.exit(0)
     vid, title, when = upload(mp4, publish_at, thumb)
