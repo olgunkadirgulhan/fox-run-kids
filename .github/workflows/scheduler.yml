@@ -32,7 +32,7 @@ jobs:
           import datetime, os
           now = datetime.datetime.now(datetime.timezone.utc)
           d = datetime.date.fromisoformat(os.environ["D"]) if os.environ.get("D") else now.date()
-          slots = ["14:00", "19:00", "23:00"]
+          slots = ["19:00"]  # 2026-10-08: izlenme yok → günde 1 (çocuk içeriği yavaş açılıyor)
           days = [d + datetime.timedelta(days=1)]
           if os.environ.get("TODAY") == "true":
               days.insert(0, d)
