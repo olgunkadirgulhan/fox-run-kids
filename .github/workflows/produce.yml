@@ -57,6 +57,7 @@ jobs:
     timeout-minutes: 340
     strategy:
       fail-fast: false
+      max-parallel: 4  # hesap genelinde aynı anda 20 iş sınırı: diğer kanallar kuyrukta kalmasın
       matrix:
         chunk: ${{ fromJson(needs.plan.outputs.chunks) }}
     steps:
