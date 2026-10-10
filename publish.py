@@ -1,4 +1,4 @@
-"""Assemble chunk videos + audio, then upload to YouTube as private with scheduled publishAt (made for kids).
+"""Assemble chunk videos + audio, then upload to YouTube as private with scheduled publishAt (general audience, not made for kids).
 Usage: python publish.py <chunks_dir> <publish_at ISO8601 UTC>"""
 import csv, datetime, glob, os, subprocess, sys
 import game as Gm
@@ -39,12 +39,12 @@ def upload(mp4, publish_at, thumb=None):
     title, desc, tags = Meta.meta()
     now = datetime.datetime.now(datetime.timezone.utc)
     when = datetime.datetime.fromisoformat(publish_at.replace("Z", "+00:00"))
-    status = {"selfDeclaredMadeForKids": True, "containsSyntheticMedia": False, "embeddable": True}
+    status = {"selfDeclaredMadeForKids": False, "containsSyntheticMedia": False, "embeddable": True}
     if when > now + datetime.timedelta(minutes=20):
         status.update(privacyStatus="private", publishAt=when.strftime("%Y-%m-%dT%H:%M:%SZ"))
     else:
         status.update(privacyStatus="public")  # slot already passed: publish right away
-    body = {"snippet": {"title": title, "description": desc, "tags": tags, "categoryId": "27",
+    body = {"snippet": {"title": title, "description": desc, "tags": tags, "categoryId": "17",
                         "defaultLanguage": "en", "defaultAudioLanguage": "en"}, "status": status}
     client = yt()
     want = os.environ.get("YT_CHANNEL_ID")

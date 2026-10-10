@@ -7,7 +7,7 @@ yt = publish.yt()
 v = yt.videos().list(part="status", id=vid).execute()["items"][0]
 st = v["status"]
 yt.videos().update(part="status", body={"id": vid, "status": {
-    "privacyStatus": "public", "selfDeclaredMadeForKids": True, "embeddable": True,
+    "privacyStatus": "public", "selfDeclaredMadeForKids": False, "embeddable": True,
     "license": st.get("license", "youtube"), "publicStatsViewable": st.get("publicStatsViewable", True)}}).execute()
 import json
 after = yt.videos().list(part="status,processingDetails,suggestions", id=vid).execute()["items"][0]

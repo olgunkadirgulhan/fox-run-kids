@@ -6,30 +6,29 @@ from googleapiclient.http import MediaFileUpload
 import publish
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TITLE = "Fox Run Kids"
-DESCRIPTION = """Stand up, kids! 🦊 Run, jump, duck and dodge with the fox!
+TITLE = "Fox Run"   # API kanal adını değiştiremiyor: Studio'da elle "Fox Run" yapılmalı
+DESCRIPTION = """Jump, duck and dodge with the fox! 🦊
 
-Fox Run Kids makes immersive, interactive workout games for children. Our fox runs through a new 3D world every week (Candy World, Desert, Space, Snow, Jungle and more) and kids copy every move at home or in the classroom:
+Fox Run turns movement into a game. Our fox runs through a new 3D world every week (Candy World, Desert, Space, Snow, Jungle and more) and you play along from your desk, couch or living room:
 
 ⬆️ JUMP over hurdles
 ⬇️ DUCK under barriers
 ⬅️➡️ DODGE left and right
-🪙 Collect coins and finish the warm up moves
+🪙 Collect coins and finish the quick moves
 
-🎬 New Shorts every day: quick dodge challenges and brain breaks
-🏃 New 8-minute immersive warm ups every Wednesday and Saturday
+🎬 New Shorts every day: reaction tests and 40-second desk breaks
+🏃 8-minute immersive run workouts every Wednesday and Saturday, no equipment needed
 
-Perfect for brain breaks, PE warm ups, rainy days and daily movement.
-Safety: make some space and play with a grown-up nearby.
+Been sitting too long? Stand up and beat the fox.
+Safety: make some space and skip any move that hurts.
 
-#kidsworkout #brainbreak #kidsexercise"""
-KEYWORDS = ('"kids workout" "brain break" "kids exercise" "immersive warm up" "interactive warm up" '
-            '"obstacle run" "fox run" "pe warm up" "movement break" "classroom exercise" "dodge challenge" '
-            '"kids fitness" "exercise for kids"')
+#reactiontest #deskbreak #workout"""
+KEYWORDS = ('"reaction test" "reflex test" "desk break" "follow along workout" "virtual run" "immersive workout" '
+            '"obstacle run" "fox run" "game workout" "no equipment workout" "dodge challenge" "movement break"')
 PLAYLISTS = {
-    "shorts": ("Dodge Challenge Shorts 🦊", "Quick jump, duck and dodge challenges. A new one every day!"),
-    "long": ("Immersive Warm Ups (8 Min) 🏃", "Full interactive obstacle-run warm ups through a new world every week."),
-    "brain": ("Classroom Brain Breaks 🧠", "Ready-to-play movement breaks for teachers and parents."),
+    "shorts": ("Reaction Tests & Dodge Challenges 🦊", "Quick jump, duck and dodge challenges. A new one every day!"),
+    "long": ("8 Min Immersive Run Workouts 🏃", "Full game-style obstacle-run workouts through a new world every week."),
+    "brain": ("Desk Break Workouts 🪑", "Short movement breaks for long days at the desk."),
 }
 SECTIONS = ["long", "shorts", "brain"]
 PL_FILE = os.path.join(HERE, "playlists.json")
@@ -57,20 +56,22 @@ def main():
                         "defaultLanguage": "en"},
             "image": {"bannerExternalUrl": banner["url"]}}}).execute()
     step("description, keywords, country/language, banner", branding)
-    step("audience: made for kids", lambda: yt.channels().update(part="status", body={
-        "id": cid, "status": {"selfDeclaredMadeForKids": True}}).execute())
+    step("audience: not made for kids (13+)", lambda: yt.channels().update(part="status", body={
+        "id": cid, "status": {"selfDeclaredMadeForKids": False}}).execute())
 
     existing = {p["snippet"]["title"]: p["id"] for p in
                 yt.playlists().list(part="snippet", mine=True, maxResults=50).execute().get("items", [])}
     ids = json.load(open(PL_FILE)) if os.path.exists(PL_FILE) else {}
     for key, (t, d) in PLAYLISTS.items():
-        if key in ids:
+        if key in ids:  # var olan listenin adı/açıklaması güncellenir (2026-10-10 genel kitleye geçiş)
+            step(f"playlist rename {key}", lambda: yt.playlists().update(part="snippet", body={"id": ids[key],
+                 "snippet": {"title": t, "description": d + "\n\nNew Fox Run videos every day.", "defaultLanguage": "en"}}).execute())
             continue
         if t in existing:
             ids[key] = existing[t]
             continue
         p = yt.playlists().insert(part="snippet,status", body={
-            "snippet": {"title": t, "description": d + "\n\nNew Fox Run Kids videos every day. #kidsworkout",
+            "snippet": {"title": t, "description": d + "\n\nNew Fox Run videos every day.",
                         "defaultLanguage": "en"}, "status": {"privacyStatus": "public"}}).execute()
         ids[key] = p["id"]
         print("✓ playlist", t)
