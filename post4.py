@@ -153,8 +153,8 @@ def hud(img, t):
             big_banner(img, "STAND UP & PLAY ALONG!", 907, 84, a, fill=(255, 255, 255))
         elif lt > 7.0:
             a = min(1.0, (lt - 7.0) * 3, (12.0 - lt) * 3)
-            big_banner(img, "IMMERSIVE INTERACTIVE", 805, 92, a)
-            big_banner(img, "WARM UP RUN!", 925, 150, a, fill=(255, 255, 255), scale=0.9 + 0.1 * min(1, (lt - 7.0) * 3))
+            big_banner(img, "IMMERSIVE", 805, 92, a)
+            big_banner(img, "WORKOUT RUN!", 925, 150, a, fill=(255, 255, 255), scale=0.9 + 0.1 * min(1, (lt - 7.0) * 3))
     elif s["kind"] == "game":
         R.panel(img, (30, 30, 600, 140), border=acc)
         R.paste_l(img, R.text_img(f"OBSTACLE RUN {s['n']}/6", 70, fill=(255, 255, 255), sw=4), 58, 45)
@@ -187,7 +187,7 @@ def hud(img, t):
                 R.paste_c(img, R.text_img("WATCH THE MOVE...", 54, fill=(255, 255, 255), sw=3), 960, 971)
         else:
             wl = lt - prep
-            R.paste_l(img, R.text_img("WARM UP MOVE", 54, fill=acc, sw=4), 62, 45)
+            R.paste_l(img, R.text_img("WORKOUT MOVE", 54, fill=acc, sw=4), 62, 45)
             seg_timer(img, work - wl, work, acc)
             if wl < 1.0:
                 R.paste_c(img, R.text_img("GO!", 300, fill=acc, sw=14), 960, 520, scale=0.8 + 0.4 * wl, alpha=1 - wl)
@@ -438,8 +438,8 @@ def thumbnail(src=None, out=None):
     R.paste_c(img, R.text_img(Gm.WORLDS[Gm.FEATURED], 110, fill=(255, 255, 255), sw=9), 960, 270)
     R.paste_c(img, R.text_img("JUMP! DUCK! DODGE!", 150, sw=12), 960, 130)
     R.panel(img, (60, 830, 700, 1040), fill=(230, 40, 110, 240), border=(255, 255, 255))
-    R.paste_c(img, R.text_img("KIDS WARM UP", 84, fill=(255, 255, 255), sw=5), 380, 885)
-    R.paste_c(img, R.text_img("RUN GAME!", 84, fill=(255, 220, 40), sw=5), 380, 980)
+    R.paste_c(img, R.text_img("FULL BODY", 84, fill=(255, 255, 255), sw=5), 380, 885)
+    R.paste_c(img, R.text_img("WORKOUT RUN!", 84, fill=(255, 220, 40), sw=5), 380, 980)
     R.panel(img, (1480, 880, 1860, 1030), fill=(20, 20, 45, 230), border=(255, 220, 40))
     R.paste_c(img, R.text_img("8 MIN", 100, fill=(255, 220, 40), sw=5), 1670, 955)
     img.convert("RGB").resize((1280, 720), Image.LANCZOS).save(out or os.path.join(HERE, "thumbnail_%s.jpg" % TAG), quality=92)

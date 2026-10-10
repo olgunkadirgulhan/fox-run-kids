@@ -21,7 +21,8 @@ PREP = 6.0
 
 # world kits (visuals live in bl_scene.py)
 KITS = ["FOREST", "BEACH", "SNOW", "DESERT", "CANDY WORLD", "CITY", "AUTUMN", "SPACE", "FARM", "JUNGLE"]
-ROTATION = [4, 3, 6, 5, 9, 8, 7, 0, 1, 2]  # featured "new world" per week
+ROTATION = [5, 3, 6, 9, 7, 8, 0, 1, 2]  # featured "new world" per week
+BANNED = {4}  # 2026-10-10: CANDY WORLD kaldırıldı (kanal yetişkin/genel kitleye döndü, çocuksu görünüm)
 WEEK0 = datetime.date(2026, 10, 5)
 WEEK = max(0, (DATE - WEEK0).days // 7)
 FEATURED = ROTATION[WEEK % len(ROTATION)]
@@ -39,11 +40,11 @@ def _rng(seed):
 _r = _rng(SEED)
 # worlds seen so far (featured ones only become available once introduced)
 UNLOCKED = [ROTATION[i % len(ROTATION)] for i in range(WEEK + 1)] + [0, 1, 2]
-UNLOCKED = list(dict.fromkeys(UNLOCKED))
+UNLOCKED = [k for k in dict.fromkeys(UNLOCKED) if k not in BANNED]
 
 
 def pick_other(exclude):
-    pool = [k for k in UNLOCKED if k not in exclude] or [k for k in range(len(KITS)) if k not in exclude]
+    pool = [k for k in UNLOCKED if k not in exclude] or [k for k in range(len(KITS)) if k not in exclude and k not in BANNED]
     return pool[int(_r() * len(pool))]
 
 
