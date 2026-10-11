@@ -2,6 +2,9 @@ name: publish-now
 on:
   workflow_dispatch:
     inputs:
+      status:
+        description: public (şimdi yayınla) ya da private (zamanlanmış yayını iptal et)
+        default: public
       video_id:
         description: YouTube video id to make public now
         required: true
@@ -21,4 +24,4 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - run: python publish_now.py "${{ inputs.video_id }}"
+      - run: python publish_now.py "${{ inputs.video_id }}" "${{ inputs.status }}"
