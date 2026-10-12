@@ -57,7 +57,7 @@ jobs:
     timeout-minutes: 340
     strategy:
       fail-fast: false
-      max-parallel: 4  # hesap genelinde aynı anda 20 iş sınırı: diğer kanallar kuyrukta kalmasın
+      max-parallel: 3  # hesap genelinde aynı anda 20 iş sınırı: diğer kanallar kuyrukta kalmasın
       matrix:
         chunk: ${{ fromJson(needs.plan.outputs.chunks) }}
     steps:
@@ -105,9 +105,8 @@ jobs:
     needs: [plan, render]
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    concurrency:
-      group: repo-writes
-      cancel-in-progress: false
+    # concurrency grubu YOK: GitHub bir grupta yalnız 1 bekleyen iş tutar, fazlasını İPTAL eder (2026-10-08 3 yarış böyle
+    # kayboldu). Kayıt adımı zaten pull --rebase + tekrar deneme ile çakışmayı çözüyor.
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
