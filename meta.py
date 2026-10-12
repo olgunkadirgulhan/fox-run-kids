@@ -2,8 +2,31 @@
 import game as Gm
 
 
+_TREND = None
+
+
+def _trend():
+    """2026-10-12 trendler: 'reaction test / desk stretches / workout' arama önerileri (başlık seçimi için)."""
+    global _TREND
+    if _TREND is None:
+        _TREND = ''
+        try:
+            import requests
+            for q in ('reaction test', 'desk stretches', 'follow along workout', 'virtual run'):
+                r = requests.get('https://suggestqueries.google.com/complete/search',
+                                 params={'client': 'firefox', 'ds': 'yt', 'hl': 'en', 'q': q}, timeout=6)
+                _TREND += ' ' + ' '.join(r.json()[1]).lower()
+        except Exception:
+            pass
+    return _TREND
+
+
 def _pick(options, k=0):
-    return options[(Gm.SEED + k) % len(options)]
+    tt = _trend()
+    keys = ('reaction', 'reflex', 'desk', 'sitting', 'virtual run', 'follow along', 'no equipment', 'challenge')
+    hot = [o for o in options if any(w in tt and w in o.lower() for w in keys)]   # trend kelimesini içeren başlıklar önce
+    pool = hot or options
+    return pool[(Gm.SEED + k) % len(pool)]
 
 
 def _ts(t):
