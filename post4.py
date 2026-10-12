@@ -229,9 +229,9 @@ def hud(img, t):
     cue(img, t)
 
 
-INTRO = {"dodge": ("CAN YOU DODGE", "THEM ALL?"), "levelup": ("3 LEVELS!", "CAN YOU KEEP UP?"),
+INTRO = {"dodge": ("ONLY 1% CAN", "DODGE THEM ALL!"), "levelup": ("3 LEVELS!", "CAN YOU KEEP UP?"),
          "movemix": ("COPY", "THE FOX!"), "count": ("CAN YOU DO", "")}
-OUTRO = {"dodge": ("HOW MANY DID", "YOU DODGE?"), "levelup": ("YOU BEAT", "LEVEL 3!"), "movemix": ("GREAT", "MOVES!"),
+OUTRO = {"dodge": ("COMMENT YOUR", "SCORE!"), "levelup": ("YOU BEAT", "LEVEL 3!"), "movemix": ("GREAT", "MOVES!"),
          "count": ("DID YOU DO", "ALL OF THEM?")}
 
 

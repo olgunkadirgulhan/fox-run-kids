@@ -54,6 +54,8 @@ def meta():
                            f"{n} {mv} Challenge — Most People Quit at Half 😮‍💨 #shorts"])
         else:
             title = _pick([
+                f"Only 1% Can Dodge All of Them 🦊 {world} Run #shorts",
+                f"I Bet You Can't Dodge Every Obstacle 😳 {world} Run #shorts",
                 f"Can You Dodge Them All? 🦊 {world} Run Reaction Test #shorts",
                 f"Jump, Duck & Dodge — Test Your Reflexes 🦊 {world} Run #shorts",
                 f"Your Reaction Time vs The Fox 🦊 {world} Run #shorts",

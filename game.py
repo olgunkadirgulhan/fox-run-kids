@@ -64,16 +64,18 @@ def shuffled(seq):
         seq[i], seq[j] = seq[j], seq[i]
     return seq
 
-FORMATS = ["dodge", "levelup", "movemix", "count"]
+# 2026-10-12: Shorts yalnız oyun formatları ve ~20 sn (rakip analizi: viral Shorts 8-20 sn; egzersiz Shorts'u izlenmiyor,
+# egzersiz uzun videoda kalır). movemix/count tanımları uzun video için duruyor.
+FORMATS = ["dodge", "levelup"]
 FORMAT = FORMATS[(DATE.toordinal() + SLOT) % len(FORMATS)] if SHORT else "long"
 if SHORT:
     W0 = FEATURED if SLOT == 1 else pick_other([FEATURED] if SLOT == 2 else [])
     COUNT_MOVES = [m for m in EX_POOL if m[0] not in ("circles", "shuffle", "run")]
     if FORMAT == "dodge":
-        SEGS = [dict(kind="game", t0=0, dur=36, world=W0, gap=2.2 + 0.3 * _r(), types="jdlr", n=1, lead=2.3)]
+        SEGS = [dict(kind="game", t0=0, dur=18, world=W0, gap=1.8 + 0.3 * _r(), types="jdlr", n=1, lead=1.6)]
     elif FORMAT == "levelup":
-        SEGS = [dict(kind="game", t0=12 * k, dur=12, world=W0, gap=[2.6, 2.05, 1.65][k], types="jdlr" if k else "jd",
-                     n=k + 1, lead=2.3 if k == 0 else 0.9) for k in range(3)]
+        SEGS = [dict(kind="game", t0=7 * k, dur=7, world=W0, gap=[2.2, 1.75, 1.4][k], types="jdlr" if k else "jd",
+                     n=k + 1, lead=1.6 if k == 0 else 0.7) for k in range(3)]
     elif FORMAT == "movemix":
         moves = shuffled(EX_POOL)[:3]
         SEGS = [dict(kind="game", t0=0, dur=9, world=W0, gap=2.3, types="jdlr", n=1, lead=2.3)]
@@ -84,8 +86,8 @@ if SHORT:
         SEGS = [dict(kind="game", t0=0, dur=6, world=W0, gap=2.0, types="jd", n=1, lead=2.0),
                 dict(kind="ex", t0=6, dur=32, world=W0, key=key, label=label, prep=4.0)]
     t_end = SEGS[-1]["t0"] + SEGS[-1]["dur"]
-    SEGS.append(dict(kind="outro", t0=t_end, dur=6, world=W0))
-    TOTAL = float(t_end + 6)
+    SEGS.append(dict(kind="outro", t0=t_end, dur=3, world=W0))
+    TOTAL = float(t_end + 3)
 else:
     TOTAL = 480.0
     w1 = FEATURED
