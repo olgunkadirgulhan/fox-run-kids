@@ -552,6 +552,14 @@ def render_long(v, mp4):
 
 
 # ---------------------------------------------------------------- akış
+def yt():
+    from google.oauth2.credentials import Credentials
+    from googleapiclient.discovery import build as gbuild
+    creds = Credentials(None, refresh_token=os.environ['YT_REFRESH_TOKEN'], client_id=os.environ['YT_CLIENT_ID'],
+                        client_secret=os.environ['YT_CLIENT_SECRET'], token_uri='https://oauth2.googleapis.com/token')
+    return gbuild('youtube', 'v3', credentials=creds, cache_discovery=False)
+
+
 def record(tid, vid, kind, title, pa):
     LOG.parent.mkdir(parents=True, exist_ok=True); new = not LOG.exists()
     with LOG.open('a', newline='', encoding='utf-8') as f:
@@ -585,7 +593,6 @@ def main():
         key, tid = pick(rnd, kurgu); v = build(key, rnd); log(f'[bigger] {tid} → {v["title"]}'); mp4 = render(v, OUT / f'short_{stamp}.mp4')
     if DRY:
         log(f'  [dry-run] {mp4}\n{v["desc"]}'); return
-    from publish import yt
     api = yt(); ch = api.channels().list(part='id,snippet', mine=True).execute()['items'][0]
     want = os.environ.get('YT_CHANNEL_ID')
     if want and ch['id'] != want: raise RuntimeError(f"yanlış kanal: {ch['snippet']['title']}")

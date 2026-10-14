@@ -35,7 +35,7 @@ def profile():
 
 
 def apply(hide_old):
-    from publish import yt
+    from bigger import yt
     from googleapiclient.http import MediaFileUpload
     api = yt(); ch = api.channels().list(part='snippet,brandingSettings', mine=True).execute()['items'][0]
     print('kanal:', ch['snippet']['title'])
