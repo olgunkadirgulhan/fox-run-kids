@@ -256,9 +256,9 @@ def build(key, rnd):
         pool = [o for o in OBJ if o not in key and o not in ('human', 'football') and OBJ[o][3] == OBJ[base_][3] and 1.5 < max(M(o), M(base_)) / min(M(o), M(base_)) < 12]
         if pool:
             o = rnd.choice(pool); unit = {'humans': (HUMAN, 'people'), 'floors': (3.5, 'floors'), 'fields': (109.7, 'football fields'),
-                                          'stackfit': (M(key[1]), f'copies of {sn(key[1])}'), 'scaleman': (HUMAN, 'times a person'), 'percent': (M(base_) / 100, 'percent')}[k]
+                                          'stackfit': (M(key[1]), f'copies of {sn(key[1])}'), 'scaleman': (HUMAN, 'times a person'), 'percent': (M(base_) / 100, f'percent of {sn(base_)}')}[k]
             n2 = M(o) / unit[0]
-            B.insert(len(B) - 1, (f'For comparison, {sn(o)} is {meters(M(o))}: {n2:,.1f} {unit[1]}.'.replace('.0 ', ' '), dict(t='line', ids=sorted([base_, o], key=M), mark=o)))
+            B.insert(len(B) - 1, (f'For comparison, {sn(o)} is {meters(M(o))}: ' + (f'{n2:,.0f}' if k in ('humans', 'floors', 'percent') else f'{n2:,.1f}') + f' {unit[1]}.', dict(t='line', ids=sorted([base_, o], key=M), mark=o)))
             used.append(o)
     src = '\n'.join(f'{TN(i)}: {meters(OBJ[i][2])} ({OBJ[i][5]})' for i in dict.fromkeys(used + ['human']) if i in OBJ)
     title = title[:95]
