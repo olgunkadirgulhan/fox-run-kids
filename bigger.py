@@ -593,7 +593,7 @@ def main():
         tr = [r for r in rows if r['date_utc'].startswith(today)]
         ns, nl = sum(r['kind'] == 'short' for r in tr), sum(r['kind'] == 'long' for r in tr)
         if ns < int(os.environ.get('SHORTS_PER_DAY') or 4): kind, n_today = 'short', ns
-        elif nl < int(os.environ.get('LONGS_PER_DAY') or 1): kind, n_today = 'long', nl
+        elif nl < int(os.environ.get('LONGS_PER_DAY') or 1) and datetime.now(timezone.utc).strftime('%a').lower()[:3] in (os.environ.get('LONG_DAYS') or 'mon,wed,fri').split(','): kind, n_today = 'long', nl   # haftada 3 uzun
         else: log(f'bugün {ns} short + {nl} uzun yüklendi, iş yok'); return
     rnd = random.Random(); OUT.mkdir(parents=True, exist_ok=True); stamp = datetime.now(timezone.utc).strftime('%Y-%m-%d_%H%M')
     if kind == 'long':
