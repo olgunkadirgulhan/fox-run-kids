@@ -1,0 +1,63 @@
+name: bigger
+# Bigger Than You Think (2026-10-14). Her çalışma 1 video: önce günün 4 Short'u, sonra 1 uzun; publishAt ile ABD saatine.
+on:
+  schedule:
+    - cron: "37 9-21 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Render only, no upload
+        type: boolean
+        default: true
+      mode:
+        description: "short | long"
+        default: short
+      kurgu:
+        description: "boş = rastgele"
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: bigger
+  cancel-in-progress: false
+jobs:
+  make:
+    if: github.event_name != 'schedule' || vars.CONTENT_MODE == 'bigger'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: pip install -q Pillow edge-tts google-api-python-client google-auth requests
+      - env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CHANNEL_ID: ${{ secrets.YT_CHANNEL_ID }}
+          SHORTS_PER_DAY: ${{ vars.SHORTS_PER_DAY || '4' }}
+          LONGS_PER_DAY: ${{ vars.LONGS_PER_DAY || '1' }}
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then python bigger.py --auto; exit 0; fi
+          ARGS=""
+          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="--dry-run"
+          [ "${{ inputs.mode }}" = "long" ] && ARGS="$ARGS --long"
+          [ -n "${{ inputs.kurgu }}" ] && ARGS="$ARGS --kurgu ${{ inputs.kurgu }}"
+          python bigger.py $ARGS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bigger-${{ github.run_id }}
+          path: out/bigger/*.mp4
+          retention-days: 5
+          if-no-files-found: ignore
+      - name: Commit log
+        if: always()
+        run: |
+          git config user.name "bigger-bot"; git config user.email "bot@users.noreply.github.com"
+          git add records/bigger_published.csv 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -m "bigger: $(date -u +%F-%H%M)"
+          git pull --rebase -q && git push -q

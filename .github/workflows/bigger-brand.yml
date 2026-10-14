@@ -1,0 +1,33 @@
+name: bigger-brand
+on:
+  workflow_dispatch:
+    inputs:
+      hide_old:
+        description: Eski Fox videolarını gizle (true/false)
+        default: "false"
+permissions:
+  contents: write
+concurrency:
+  group: bigger
+  cancel-in-progress: false
+jobs:
+  brand:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q Pillow google-api-python-client google-auth requests numpy imageio-ffmpeg
+      - env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+        run: python bigger_brand.py --apply ${{ inputs.hide_old == 'true' && '--hide-old' || '' }}
+      - run: |
+          git config user.name "bigger-bot"; git config user.email "bot@users.noreply.github.com"
+          git add records/hidden_old.json 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -m "bigger: gizlenen eski videolar"; git stash -q -u || true
+          git pull --rebase -q && git push -q

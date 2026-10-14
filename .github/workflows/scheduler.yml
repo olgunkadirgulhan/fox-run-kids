@@ -20,6 +20,7 @@ permissions:
 
 jobs:
   queue:
+    if: vars.CONTENT_MODE != 'bigger'   # 2026-10-14: kanal Bigger Than You Think (bigger.yml)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
