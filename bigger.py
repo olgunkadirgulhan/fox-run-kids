@@ -117,7 +117,7 @@ def key_for(k, rnd):
         if len({round(M(x)) for x in s}) < n: return None
         return [k] + s
     if k in ('humans', 'guess', 'floors', 'scaleman'):
-        x = rnd.choice([i for i in (H_IDS if k == 'floors' else big) if i != 'human'])
+        x = rnd.choice([i for i in (H_IDS if k == 'floors' else big) if i not in ('human', 'football')])
         if k == 'scaleman' and M(x) > 150: return None
         return [k, x]
     if k == 'stackfit':
@@ -131,7 +131,7 @@ def key_for(k, rnd):
         a, b = rnd.choice(L_IDS), rnd.choice(H_IDS)
         return [k, a, b] if 0.4 < M(a) / M(b) < 2.5 else None
     if k == 'fields':
-        x = rnd.choice([i for i in big if M(i) > 100]); return [k, x]
+        x = rnd.choice([i for i in big if M(i) > 100 and i != 'football']); return [k, x]
     if k == 'reveal':
         s = sorted(rnd.sample(big, 3), key=M)
         return [k] + s if M(s[2]) / M(s[0]) > 3 else None

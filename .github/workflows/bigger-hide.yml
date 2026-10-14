@@ -1,0 +1,34 @@
+name: bigger-hide
+# Verilen videoları gizli yapar (zamanlanmış yayını iptal eder). Silmez.
+on:
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: Video id'leri (boşlukla)
+        required: true
+jobs:
+  hide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q google-api-python-client google-auth Pillow
+      - env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          IDS: ${{ inputs.ids }}
+        run: |
+          python - <<'PY'
+          import os
+          from bigger import yt
+          api = yt()
+          for vid in os.environ['IDS'].split():
+              v = api.videos().list(part='status,snippet', id=vid).execute()['items'][0]
+              st = v['status']; st['privacyStatus'] = 'private'; st.pop('publishAt', None)
+              api.videos().update(part='status', body={'id': vid, 'status': st}).execute()
+              print('gizlendi', vid, v['snippet']['title'])
+          PY
