@@ -251,6 +251,15 @@ def build(key, rnd):
              (f'That is {M(x) / HUMAN:,.1f} times a person.', dict(t='count', n=M(x) / HUMAN, lab='TIMES A PERSON', ids=[x], dec=True)),
              ('What should I put next to a person next? Comment below.', dict(t='line', ids=['human', x], cta='WHAT NEXT?'))]
         title = f'{TN(x)} Next to a Person, to Scale'; used = [x]
+    if k in ('humans', 'floors', 'fields', 'stackfit', 'scaleman', 'percent') and len(B) >= 3:      # kıyas cümlesi
+        base_ = key[1] if k != 'percent' else key[2]
+        pool = [o for o in OBJ if o not in key and o not in ('human', 'football') and OBJ[o][3] == OBJ[base_][3] and 1.5 < max(M(o), M(base_)) / min(M(o), M(base_)) < 12]
+        if pool:
+            o = rnd.choice(pool); unit = {'humans': (HUMAN, 'people'), 'floors': (3.5, 'floors'), 'fields': (109.7, 'football fields'),
+                                          'stackfit': (M(key[1]), f'copies of {sn(key[1])}'), 'scaleman': (HUMAN, 'times a person'), 'percent': (M(base_) / 100, 'percent')}[k]
+            n2 = M(o) / unit[0]
+            B.insert(len(B) - 1, (f'For comparison, {sn(o)} is {meters(M(o))}: {n2:,.1f} {unit[1]}.'.replace('.0 ', ' '), dict(t='line', ids=sorted([base_, o], key=M), mark=o)))
+            used.append(o)
     src = '\n'.join(f'{TN(i)}: {meters(OBJ[i][2])} ({OBJ[i][5]})' for i in dict.fromkeys(used + ['human']) if i in OBJ)
     title = title[:95]
     desc = (title + '\n\nMeasurements:\n' + src + '\nAverage adult shown at 1.7 m. Drawings are simplified, but every size is to scale.'
