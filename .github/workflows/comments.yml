@@ -28,15 +28,15 @@ jobs:
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
-          CHANNEL_NAME: "Fox Run"
-          CHANNEL_ABOUT: "3D fox obstacle-run Shorts: jump, duck and dodge challenges and reaction games."
+          CHANNEL_NAME: "Bigger Than You Think"
+          CHANNEL_ABOUT: "Size comparison Shorts: skyscrapers, ships, planes, animals and landmarks drawn side by side at the same scale with real measurements."
           CHANNEL_KIND: general
           CHANNEL_LANG: en
           STATE_FILE: comment_replies.json
           MAX_REPLIES_PER_DAY: "45"
           REQUESTS_FILE: viewer_requests.json
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          FIRST_QUESTIONS: "[\"Did you beat the fox? 🦊\", \"What level did you reach? 🔥\", \"Which obstacle got you? 😅\", \"Should the next run be faster? ⚡\", \"Which world should we run next? 🌍\", \"Rate your reaction time 1 to 10 ⏱️\", \"Did you dodge them all? 👀\", \"Which move was the hardest? 💪\"]"
+          FIRST_QUESTIONS: "[\"Which size surprised you the most? 📏\", \"Did you guess right before the reveal? 🤔\", \"What should we compare next? 👇\", \"Taller or longer: which do you want more of? 🏙️\", \"Which one would you most like to see in person? 🗺️\", \"Name two giants and we will put them side by side! 👇\", \"Did you think it was bigger or smaller? 😮\", \"What is the biggest thing you have ever seen? 🚢\"]"
         run: python tools/auto_reply.py
       - run: |
           git config user.name "comment-bot"
