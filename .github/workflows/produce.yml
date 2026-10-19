@@ -21,7 +21,7 @@ env:
 
 jobs:
   plan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     outputs:
       chunks: ${{ steps.p.outputs.chunks }}
@@ -53,7 +53,7 @@ jobs:
 
   render:
     needs: plan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 340
     strategy:
       fail-fast: false
@@ -103,7 +103,7 @@ jobs:
 
   publish:
     needs: [plan, render]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     # concurrency grubu YOK: GitHub bir grupta yalnız 1 bekleyen iş tutar, fazlasını İPTAL eder (2026-10-08 3 yarış böyle
     # kayboldu). Kayıt adımı zaten pull --rebase + tekrar deneme ile çakışmayı çözüyor.

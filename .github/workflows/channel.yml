@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   setup:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}

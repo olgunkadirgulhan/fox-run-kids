@@ -27,7 +27,7 @@ concurrency:
 jobs:
   make:
     if: (github.event_name != 'schedule' && !inputs.auto) || vars.CONTENT_MODE == 'bigger'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4

@@ -16,7 +16,7 @@ concurrency:
 jobs:
   upload:
     if: vars.CONTENT_MODE != 'bigger'   # 2026-10-14: kanal Bigger Than You Think (bigger.yml)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       GH_TOKEN: ${{ github.token }}
