@@ -43,6 +43,7 @@ jobs:
           YT_CHANNEL_ID: ${{ secrets.YT_CHANNEL_ID }}
           SHORTS_PER_DAY: ${{ vars.SHORTS_PER_DAY || '4' }}
           LONGS_PER_DAY: ${{ vars.LONGS_PER_DAY || '1' }}
+          LONG_DAYS: ${{ vars.LONG_DAYS || 'mon,wed,fri' }}
         run: |
           if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.auto }}" = "true" ]; then python bigger.py --auto; exit 0; fi
           ARGS=""
