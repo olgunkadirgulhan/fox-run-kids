@@ -17,6 +17,7 @@ import json
 import math
 import os
 import random
+import re
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
@@ -137,10 +138,47 @@ def key_for(k, rnd):
         return [k] + s if M(s[2]) / M(s[0]) > 3 else None
 
 
+def tkey(t):
+    return ' '.join(re.sub(r'[^a-z0-9 ]', ' ', re.sub(r'#\w+', ' ', t.lower())).split())
+
+
+_KW = None
+
+
+def kurgu_weights(rows):
+    """2026-10-25: kurgu seçimi kanalın kendi izlenmesine göre (≥24 saatlik Shorts'ların kurgu medyanı / genel medyan).
+    Veri yoksa ya da API yoksa hepsi 1; hiç denenmemiş kurgu 1.5 (keşif). Sınırlar 0.3-4."""
+    global _KW
+    if _KW is not None: return _KW
+    _KW = {}
+    try:
+        cut = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime('%Y-%m-%d %H:%M')
+        sh = [r for r in rows if r['kind'] == 'short' and r['date_utc'] < cut and r['video_id']]
+        if not sh or not os.environ.get('YT_REFRESH_TOKEN'): return _KW
+        api = yt(); views = {}
+        for i in range(0, len(sh), 50):
+            for it in api.videos().list(part='statistics', id=','.join(r['video_id'] for r in sh[i:i + 50])).execute().get('items', []):
+                views[it['id']] = int(it['statistics'].get('viewCount', 0))
+        import statistics as st
+        by = {}
+        for r in sh:
+            if r['video_id'] in views: by.setdefault(r['topic_id'].split(':')[1], []).append(views[r['video_id']])
+        allv = [v for vs in by.values() for v in vs]
+        if not allv: return _KW
+        m = st.median(allv)
+        _KW = {k: max(0.3, min(4.0, (st.median(vs) + 20) / (m + 20))) for k, vs in by.items()}
+        log('kurgu ağırlıkları: ' + ', '.join(f'{k}={w:.2f}' for k, w in sorted(_KW.items(), key=lambda x: -x[1])))
+    except Exception as e:
+        log(f'kurgu ağırlıkları alınamadı: {e}')
+    return _KW
+
+
 def pick(rnd, kurgu=None):
     seen, rows = done(); last = [r['topic_id'].split(':')[1] for r in rows[-4:] if r['topic_id'].startswith('bg:')]
+    kw = kurgu_weights(rows)
     for _ in range(4000):
-        k = kurgu or rnd.choice([x for x in KURGU if x not in last] or KURGU)
+        pool = [x for x in KURGU if x not in last] or list(KURGU)
+        k = kurgu or rnd.choices(pool, weights=[kw.get(x, 1.5 if kw else 1) for x in pool])[0]
         key = key_for(k, rnd)
         if key is None: continue
         tid = 'bg:' + ':'.join(str(x) for x in key)
@@ -167,7 +205,7 @@ def build(key, rnd):
         for i in range(1, len(ids)):
             B.append((f'{cap(sn(ids[i]))}: {meters(M(ids[i]))}.' + (f' That is {M(ids[i]) / M(ids[i - 1]):.1f} times bigger.' if k == 'reveal' else ''), dict(t='line', ids=ids[:i + 1], anim=True)))
         B.append((C(rnd, 'Which one surprised you? Comment below.', 'What should be next in line? Comment below.'), dict(t='line', ids=ids, cta='WHAT NEXT?')))
-        title = (f'{TN(ids[0])} to {TN(ids[-1])}: {len(ids)} Giants Compared' if k == 'lineup5' else f'Start With {TN(ids[0])}, Then Zoom Out')
+        title = (f'{TN(ids[0])} to {TN(ids[-1])}: {len(ids)} Giants Compared' if k == 'lineup5' else f'Start With {TN(ids[0])}, Zoom Out to {TN(ids[-1])}')
         used = list(ids)
     elif k == 'humans':
         x = key[1]; n = M(x) / HUMAN
@@ -214,7 +252,7 @@ def build(key, rnd):
              (f'It is {"ABCD"[r]}: {sn(x)}, at {meters(M(x))}.', dict(t='opts', ids=[], o=ops, r=r)),
              (' '.join(f'{cap(sn(i))}: {meters(M(i))}.' for i in sh if i != x), dict(t='line', ids=ids, mark=x)),
              ('Did you spot it? Comment below.', dict(t='line', ids=ids, mark=x, cta='DID YOU SPOT IT?'))]
-        title = 'Only One of These Is Over 300 Meters. Which?'; used = ids
+        title = 'Only One Is Over 300 m: ' + ', '.join(TN(x) for x in ids[:-1]) + f' or {TN(ids[-1])}?'; used = ids
     elif k == 'sideways':
         a, b = key[1], key[2]; w = a if M(a) > M(b) else b
         B = [(f'If you stood {sn(a)} on its end, would it be taller than {sn(b)}?', dict(t='line', ids=[a, b], hide=True, stand=True)),
@@ -528,7 +566,7 @@ def build_long(ids, rnd):
         s += f' Source: {OBJ[x][5]}.' if rnd.random() < 0.4 else ''
         B.append((s, dict(n=i + 1)))
     B.append((f'From {meters(M(ids[0]))} to {meters(M(ids[-1]))}: {nm(ids[-1])} is {M(ids[-1]) / M(ids[0]):,.0f} times bigger. Which size surprised you? Tell me in the comments.', dict(n=len(ids), cta=True)))
-    title = C(rnd, f'{len(ids)} Giants Compared to Scale: {TN(ids[0])} to {TN(ids[-1])}', f'How Big Are They Really? {len(ids)} Things to Scale')
+    title = C(rnd, f'{len(ids)} Giants Compared to Scale: {TN(ids[0])} to {TN(ids[-1])}', f'How Big Are They Really? {TN(ids[0])}, {TN(ids[len(ids) // 2])}, {TN(ids[-1])} & More')
     desc = (title + '\n\nMeasurements:\n' + '\n'.join(f'{TN(i)}: {meters(M(i))} ({OBJ[i][5]})' for i in ids)
             + '\nDrawings are simplified, but every size is to scale.\n\n#sizecomparison #biggerthanyouthink #scale')
     return dict(ids=ids, beats=[b for b, _ in B], scenes=[s for _, s in B], title=title[:95], desc=desc,
@@ -597,9 +635,22 @@ def main():
         else: log(f'bugün {ns} short + {nl} uzun yüklendi, iş yok'); return
     rnd = random.Random(); OUT.mkdir(parents=True, exist_ok=True); stamp = datetime.now(timezone.utc).strftime('%Y-%m-%d_%H%M')
     if kind == 'long':
-        ids, tid = pick_long(rnd); v = build_long(ids, rnd); log(f'[bigger-long] {tid} → {v["title"]}'); mp4 = render_long(v, OUT / f'long_{stamp}.mp4')
+        seen = {tkey(r['title']) for r in done()[1]}
+        for _ in range(25):
+            ids, tid = pick_long(rnd); v = build_long(ids, rnd)
+            if tkey(v['title']) not in seen: break
+        else:
+            raise SystemExit('25 denemede yeni başlık bulunamadı')
+        log(f'[bigger-long] {tid} → {v["title"]}'); mp4 = render_long(v, OUT / f'long_{stamp}.mp4')
     else:
-        key, tid = pick(rnd, kurgu); v = build(key, rnd); log(f'[bigger] {tid} → {v["title"]}'); mp4 = render(v, OUT / f'short_{stamp}.mp4')
+        # 2026-10-25: aynı başlık iki kez yüklenmez (tekrar eden başlıkları YouTube dağıtmıyor)
+        seen = {tkey(r['title']) for r in done()[1]}
+        for _ in range(25):
+            key, tid = pick(rnd, kurgu); v = build(key, rnd)
+            if tkey(v['title']) not in seen: break
+        else:
+            raise SystemExit('25 denemede yeni başlık bulunamadı')
+        log(f'[bigger] {tid} → {v["title"]}'); mp4 = render(v, OUT / f'short_{stamp}.mp4')
     if DRY:
         log(f'  [dry-run] {mp4}\n{v["desc"]}'); return
     api = yt(); ch = api.channels().list(part='id,snippet', mine=True).execute()['items'][0]
