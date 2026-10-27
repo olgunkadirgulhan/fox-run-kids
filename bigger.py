@@ -3,7 +3,7 @@
 
 Ölçüler resmî/yaygın kaynaklardan (CTBUH bina yükseklikleri, üretici uzunlukları, müze/rekor kayıtları); her açıklamada
 yazar. Görsel kimlik (diğer kanallara benzemesin): lacivert teknik çizim (blueprint), beyaz çizgi sanatı, ölçü okları,
-Barlow Condensed + JetBrains Mono, Kanadalı anlatıcı (en-CA-LiamNeural). Emoji yok, krem zemin yok.
+Barlow Condensed + JetBrains Mono, belgesel anlatıcı (Kokoro bm_george). Emoji yok, krem zemin yok.
 
 Short kurguları (15): taller2, lineup5, humans, stackfit, guess, rank3, truefalse, oddone, sideways, percent, floors,
 fields, reveal, scaleman, closer.  Uzun (16:9): lineup (12-16 nesne tek tek, ~4 dk).
@@ -499,18 +499,27 @@ def frame(base, v, bi, t, dur, W=1080, H=1920):
 def ff(): return os.environ.get('FFMPEG') or 'ffmpeg'
 
 
-def tts(text, path):
-    import edge_tts
+KOKORO_VOICE = os.environ.get('BG_KOKORO_VOICE', 'bm_george')   # belgesel tonlu anlatıcı (Kokoro, Apache-2.0: ücretsiz, ticari kullanım serbest)
+_kokoro = None
 
-    async def go():
-        await edge_tts.Communicate(text, VOICE, rate='+6%').save(str(path))
+
+def tts(text, path):
+    """Seslendirme: Kokoro (açık kaynak, GitHub'da çalışır, kota yok)."""
+    global _kokoro
+    import numpy as np, soundfile as sf
     for i in range(3):
         try:
-            asyncio.run(go())
+            if _kokoro is None:
+                from kokoro import KPipeline
+                _kokoro = KPipeline(lang_code='b' if KOKORO_VOICE[0] == 'b' else 'a')
+            audio = np.concatenate([a for _, _, a in _kokoro(text, voice=KOKORO_VOICE, speed=1.05)])
+            wav = Path(str(path) + '.wav'); sf.write(str(wav), audio, 24000)
+            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(wav), '-ar', '44100', '-ac', '1', '-b:a', '160k', str(path)], check=True)
+            wav.unlink(missing_ok=True)
             if path.exists() and path.stat().st_size > 1000: return
         except Exception as e:
             log(f'  tts deneme {i + 1}: {e}')
-    raise RuntimeError('edge-tts çalışmadı')
+    raise RuntimeError('seslendirme çalışmadı')
 
 
 def voice(beats, tmp, pad=0.3, holds=()):

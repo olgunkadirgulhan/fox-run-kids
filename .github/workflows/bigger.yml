@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ffmpeg
-      - run: pip install -q Pillow edge-tts google-api-python-client google-auth requests
+      - run: pip install -q --extra-index-url https://download.pytorch.org/whl/cpu Pillow "kokoro>=0.9.4" soundfile "misaki[en]" "en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" google-api-python-client google-auth requests
       - env:
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
