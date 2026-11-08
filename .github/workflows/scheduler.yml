@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   queue:
-    if: vars.CONTENT_MODE != 'bigger'   # 2026-10-14: kanal Bigger Than You Think (bigger.yml)
+    if: vars.CONTENT_MODE == ''   # 2026-11-08: kanal başka konseptte (bigger.yml / emojiquiz.yml) → eski Fox Run akışı kapalı
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
