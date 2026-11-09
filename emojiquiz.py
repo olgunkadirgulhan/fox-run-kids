@@ -119,10 +119,11 @@ def frame_fn(p):
     return f, total, events
 
 
-TITLES = {'food': ['Guess the Food From the Zoom! 🔍 6 Levels #{n}', 'Can You Guess the Food? Zoomed In 🍔 #{n}', 'Zoom Quiz: Guess the Food (Level 1-6) #{n}',
-                   'Only Foodies Pass Level 6 🍕 Guess the Food #{n}', 'What Food Is This? 🤔 Zoom Challenge #{n}'],
-          'animal': ['Guess the Animal by Its Shadow! 🐾 6 Levels #{n}', 'Shadow Quiz: Guess the Animal 🦁 #{n}', 'Can You Name All 6 Animals? 🐘 #{n}',
-                     'Guess the Animal (Easy to Hard) 🐼 #{n}', 'Whose Shadow Is This? 🐾 Animal Quiz #{n}']}[KIND]
+# 2026-11-09: 576 kombinasyon/tür (3/gün ≈ 6 ay); tkey #N'i yok saydığından 5 sabit başlık 5. videoda bitiyordu
+_HOOKS = {'food': ['Guess the Food From the Zoom!', 'Can You Guess the Food?', 'Zoom Quiz: Guess the Food!', 'Only Foodies Pass Level 6!', 'What Food Is This?', 'Name This Food!', 'Zoomed-In Food Quiz!', 'Food Zoom Challenge!', 'Guess What We Zoomed Into!', 'How Many Foods Can You Name?', 'Food Detective Quiz!', 'Can You Beat the Food Zoom?', 'Mystery Food Zoom!', 'Too Close to Tell?', 'Name That Food!', 'The Real Foodie Test!', 'Zoom In, Guess the Food!', 'Food Guessing Game!', 'Close-Up Food Quiz!', 'Test Your Food Eyes!', 'Spot the Food!', 'Think You Know Food?', 'Hungry Brain Quiz!', 'Which Food Is Hiding?'], 'animal': ['Guess the Animal by Its Shadow!', 'Shadow Quiz: Guess the Animal!', 'Can You Name All 6 Animals?', 'Guess the Animal!', 'Whose Shadow Is This?', 'Name This Animal!', 'Animal Shadow Challenge!', 'Mystery Animal Shadow!', 'How Many Animals Can You Name?', 'Animal Detective Quiz!', 'Can You Beat the Shadow Quiz?', 'Name That Shadow!', 'The Real Animal Lover Test!', 'Which Animal Is Hiding?', 'Silhouette Quiz: Name the Animal!', 'Animal Guessing Game!', 'Spot the Animal!', 'Test Your Animal Eyes!', 'Think You Know Animals?', 'Shadow Animals Quiz!', 'Who Made This Shadow?', 'Wild Shadow Challenge!', 'Zoo Shadow Quiz!', 'Guess Who From the Shadow!']}[KIND]
+_EM = {'food': ['🔍', '🍔', '🍕', '🍩'], 'animal': ['🐾', '🦁', '🐘', '🐼']}[KIND]
+_TAILS = ['6 Levels {0}', 'Level 1-6 {1}', 'Easy to Hard {2}', '6 Rounds {3}', 'Can You Get 6/6? {0}', 'Hard Mode at the End {1}', 'Comment Your Score {2}', 'Beat Your Friends {3}', '3 Seconds Each {0}', 'No Cheating {1}', 'Level 6 Is Tough {2}', 'How Far Can You Go? {3}', 'Daily Quiz {0}', 'Quick Brain Test {1}', 'Try It With Family {2}', 'Keep Your Streak {3}', 'Six Chances {0}', 'Answer Before Time Ends {1}', 'Fast Round {2}', 'Play Along {3}', 'Score Yourself {0}', 'Test Yourself {1}', 'Challenge a Friend {2}', 'Beat the Timer {3}']
+TITLES = [f'{h} {t.format(*_EM)} #{{n}}' for h in _HOOKS for t in _TAILS]
 
 
 def main():
@@ -134,7 +135,7 @@ def main():
     n = len(rows) + 1; p = dict(qs=qs, n=n, seed=rnd.randrange(10 ** 6))
     seen = {K.tkey(r['title']) for r in rows}
     opts = [t.format(n=n) for t in TITLES]; rnd.shuffle(opts)
-    title = next(o for o in opts if K.tkey(o) not in seen)
+    title = next((o for o in opts if K.tkey(o) not in seen), opts[0])
     desc = (f"Guess the {CFG['noun'].lower()}! 6 levels from easy to hard.\n\n"
             + '\n'.join(f"Level {q['lv']}: {CFG['items'][q['e']]} {q['e']}" for q in qs)
             + '\n\nHow many did you get? Comment your score 👇 New quiz every day.\n\n'
